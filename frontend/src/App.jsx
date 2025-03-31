@@ -6,7 +6,7 @@ import SocketService from './services/socketService';
 
 function App() {
   const [user, setUser] = useState(null);
-  const myToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoxLCJ1c2VybmFtZSI6ImpvaG4ifSwiaWF0IjoxNzQzNDE0ODUyLCJleHAiOjE3NDM0MTg0NTIsImF1ZCI6InlvdXJzaXRlLm5ldCIsImlzcyI6ImFjY291bnRzLmV4YW1wbGVzb2Z0LmNvbSJ9.wvZJM5I2sxDLecQAvG2mnJZivhVmBq5P97K_g8VsZ2k"
+  const myToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoxLCJ1c2VybmFtZSI6ImpvaG4ifSwiaWF0IjoxNzQzNDE5NzcyLCJleHAiOjE3NDM0MjMzNzJ9.6_gBlZlH2niINaoFF9J_93Pwi2L4dWptBm-Znr26doA"
 
   useEffect(() => {
     // Check for existing user in local storage
