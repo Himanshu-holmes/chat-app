@@ -11,6 +11,30 @@ const ChatDashboard = ({ currentUser, onLogout }) => {
     const [newMessage, setNewMessage] = useState('');
     const [searchUser, setSearchUser] = useState('');
     const [showNotification, setShowNotification] = useState([])
+    const [status,setStatus] = useState([])
+   
+    useEffect(()=>{
+        // get all users that you messaged sorted by latest message
+
+        async function handleUserStatus(data){
+          
+            if ( !data?.isOnline){
+                console.log("user is offline",data)
+                return
+            }
+          setStatus(prev=>{
+            if(prev.some(user=>user.id === id)){
+                return prev
+            }
+            return [...prev,id]
+          })
+        }
+        socketService.onUserStatusResponse(handleUserStatus)
+        return () => {
+            SocketService.socket?.off("user:status_res", handleUserStatus);
+        };
+    },[])
+
 
     useEffect(() => {
         setUsers((prev) => prev.filter(u => u.id !== currentUser.id));
@@ -104,6 +128,7 @@ const ChatDashboard = ({ currentUser, onLogout }) => {
                             className={`user-item ${selectedUser?.id === user.id ? 'selected' : ''} flex justify-between`}
                             onClick={() => {
                                 setSelectedUser(user)
+                                socketService.getUserStatus(user.id)
                             }
                             }
                         >
@@ -111,8 +136,9 @@ const ChatDashboard = ({ currentUser, onLogout }) => {
 
                             {user.username} 
                             </div>
-                        <div className={`p-1 rounded-full text-white ${ showNotification.includes(user.id) && selectedUser.id !== user.id?"bg-red-500":""}`}>
-                            {showNotification.includes(user.id)&&
+                            {console.log("userid error",user.id,selectedUser)}
+                        <div className={`p-1 rounded-full text-white ${ showNotification.includes(user?.id) && selectedUser.id !== user.id?"bg-red-500":""}`}>
+                            {showNotification.includes(user?.id)&&
                             <>1</>
                             }
                         </div>

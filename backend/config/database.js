@@ -25,6 +25,15 @@ async function initializeDatabase() {
         is_read BOOLEAN DEFAULT FALSE
       )
     `);
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY ,
+        username VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
     connection.release();
     console.log("Database initialized successfully");
   } catch (error) {

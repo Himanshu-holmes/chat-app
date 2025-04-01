@@ -4,19 +4,20 @@ class SocketService {
   constructor() {
     this.socket = null;
       this.onPrivateMessageCallback = () => {};
+      this.onUserStatusResponseCallback = ()=>{};
   }
 
-  connect(userId,myToken) {
+  connect(myToken) {
     // Establish socket connection
     this.socket = io("http://localhost:5000", {
-      query: { userId },
+    
       extraHeaders: {
         authorization: `bearer ${myToken}`,
       },
     });
-    console.log(userId);
+   
     // Authentication
-    this.socket.emit("authenticate", userId);
+    this.socket.emit("authenticate", "");
 
     // Connection event listeners
     this.socket.on("connect", (socket) => {
@@ -29,6 +30,12 @@ class SocketService {
         this.onPrivateMessageCallback(msg);
       }
     });
+    this.socket.on("user:status_res",(data)=>{
+      console.log("user satus res",data)
+      if (this.onUserStatusResponseCallback) {
+        this.onUserStatusResponseCallback(data);
+      }
+    })
     this.socket.on("disconnect", () => {
       console.log("Disconnected from socket server");
     });
@@ -37,6 +44,7 @@ class SocketService {
     this.socket.on("connect_error", (error) => {
       console.error("Connection error:", error);
     });
+    
   }
   onPrivateMessage(callback) {
       if (typeof callback === "function") {
@@ -45,6 +53,13 @@ class SocketService {
         console.error("onPrivateMessage expects a function");
       }
   }
+  onUserStatusResponse(callback){
+    if (typeof callback === "function") {
+      this.onUserStatusResponseCallback = callback;
+    } else {
+      console.error("onUserStatus expects a function");
+    }
+  }
 
   sendPrivateMessage(senderId, receiverId, message) {
     this.socket.emit("private_message", {
@@ -52,6 +67,9 @@ class SocketService {
       receiverId,
       message,
     });
+  }
+  getUserStatus(userId){
+    this.socket.emit("user:status",userId);
   }
   searchUser(userId) {
     console.log("searched userId", userId);

@@ -1,6 +1,6 @@
 const socketIo = require("socket.io");
 const Message = require("../models/message");
-const passport = require("passport");
+const passport = require("../config/passport");
 
 const passportJwt = require("passport-jwt");
 
@@ -35,10 +35,10 @@ const io = socketIo(server, {
 });
 
 io.engine.use((req, res, next) => {
-   
+
   const isHandshake = req._query.sid === undefined;
   if (isHandshake) {
-   
+
     passport.authenticate("jwt", { session: false })(req, res, next);
   } else {
 
@@ -48,28 +48,31 @@ io.engine.use((req, res, next) => {
 // Socket.IO connection handler
 const users = new Map(); // Store userId -> socketId
 
-io.on("connection", (socket) => {
+io.on("connection",async (socket) => {
   console.log("New client connected");
   console.log("users socket id", socket.id);
   console.log("user", socket.request.user);
+  let userId =socket.request.user.id
   // Store user when they authenticate
-  socket.on("authenticate", async (userId) => {
-    await userStatus.setOnline(userId);
-    socket.userId = userId;
-    users.set(userId, socket.id); // Store userId -> socketId
+    await userStatus.setOnline(userId,socket?.id);
+  
+  // socket.on("authenticate", async (userId) => {
+  //   socket.userId = userId;
+  //   // users.set(userId, socket.id); // Store userId -> socketId
 
-    socket.broadcast.emit("user_online", userId);
-  });
+  //   // socket.broadcast.emit("user_online", userId);
+  // });
 
   // Search for a user by userId
-  socket.on("searchUser", (userId) => {
-    console.log("Searched user:", userId);
-    const receiverSocketId = users.get(userId);
-    console.log(users);
+  socket.on("searchUser", async(userToSearch) => {
+    console.log("Searched user:", userToSearch);
+    // const receiverSocketId = users.get(userId);
+    const receiverSocketId = await userStatus.getUserSocketId(userToSearch)
+  console.log("reciewver socket id ")
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("private_message", {
         id: "messageId",
-        senderId: socket.userId,
+        senderId: userId,
         message: "hello",
       });
     } else {
@@ -84,33 +87,36 @@ io.on("connection", (socket) => {
 
     try {
       const messageId = await Message.create(senderId, receiverId, message);
-      const receiverSocketId = users.get(receiverId);
+      // const receiverSocketId = users.get(receiverId);
+      const receiverSocketId = await userStatus.getUserSocketId(receiverId)
 
       if (receiverSocketId) {
-        io.to(receiverSocketId).emit("new_message", {
-          id: messageId,
-          senderId,
-          message,
-        });
+        // io.to(receiverSocketId).emit("new_message", {
+        //   id: messageId,
+        //   senderId,
+        //   message,
+        // });
         io.to(receiverSocketId).emit("private_message", {
           id: "messageId",
-          senderId: socket.userId,
+          senderId: userId,
           message: message,
         });
       }
-
       socket.emit("message_sent", { id: messageId });
     } catch (error) {
       console.error("Message sending error:", error);
       socket.emit("message_error", { error: "Failed to send message" });
     }
   });
-
+ socket.on("user:status",async(userIdToCheck)=>{
+    console.log("userId to check status",userIdToCheck)
+    const status = await userStatus.isOnline(userIdToCheck);
+    socket.emit("user:status_res",{id:userId,isOnline:status})
+ })
   // Handle disconnect
   socket.on("disconnect", async () => {
     if (socket.userId) {
       await userStatus.setOffline(socket.userId);
-      users.delete(socket.userId); // Remove user from map
       socket.broadcast.emit("user_offline", socket.userId);
     }
     console.log("Client disconnected");

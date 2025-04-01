@@ -8,16 +8,20 @@ const redisClient = new Redis({
 
 // User online status management
 const userStatus = {
-  setOnline: (userId) => {
-    return redisClient.set(`user:${userId}:online`, "true");
+  setOnline: (userId,socketId) => {
+    return redisClient.set(`user:${userId}`, socketId);
   },
   setOffline: (userId) => {
-    return redisClient.del(`user:${userId}:online`);
+    return redisClient.del(`user:${userId}`);
   },
   isOnline: async (userId) => {
-    const status = await redisClient.get(`user:${userId}:online`);
-    return status === "true";
+    const status = await redisClient.get(`user:${userId}`);
+    return status !== null;
   },
+  getUserSocketId:async(userId)=>{
+    return await redisClient.get(`user:${userId}`);
+  }
+  
 };
 
 redisClient.on("error", (err) => {
