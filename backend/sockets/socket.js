@@ -101,6 +101,7 @@ io.on("connection",async (socket) => {
           senderId: userId,
           message: message,
         });
+      
       }
       socket.emit("message_sent", { id: messageId });
     } catch (error) {
@@ -110,8 +111,13 @@ io.on("connection",async (socket) => {
   });
  socket.on("user:status",async(userIdToCheck)=>{
     console.log("userId to check status",userIdToCheck)
-    const status = await userStatus.isOnline(userIdToCheck);
-    socket.emit("user:status_res",{id:userId,isOnline:status})
+    const userIdToCheckstatus = await userStatus.isOnline(userIdToCheck);
+   const userSocket =  await userStatus.getUserSocketId(userId)
+   const receiverSocket = await userStatus.getUserSocketId(userIdToCheck)
+    await userStatus.getUserSocketId()
+    io.to(userSocket).emit("user:status_res", { id: userIdToCheck, isOnline: userIdToCheckstatus });
+    io.to(receiverSocket).emit("user:status_res", { id: userId, isOnline: true });
+    // socket.to(receiverSocket).emit("user:status_res",{id:userId,isOnline:status})
  })
   // Handle disconnect
   socket.on("disconnect", async () => {

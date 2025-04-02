@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Tab, Tabs } from './Tab';
 import axios from "axios"
 
-const AuthComponent = ({ token,setToken }) => {
+const AuthComponent = ({ setToken, setUser }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('')
     const [error, setError] = useState('');
@@ -17,7 +17,8 @@ const AuthComponent = ({ token,setToken }) => {
             console.log("response status",response.status)
              if(response.status != 200)return
              const data = response.data
-             setToken(data.token) 
+             setToken(data.token)
+             setUser(data.user)
         } catch (error) {
             console.log(error.response)
             if(error?.response?.data?.message){

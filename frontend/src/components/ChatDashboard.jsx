@@ -3,9 +3,9 @@ import SocketService from '../services/socketService';
 import socketService from '../services/socketService';
 
 const ChatDashboard = ({ currentUser, onLogout }) => {
-    const [users, setUsers] = useState([{ id: '1', username: 'Alice' },
-    { id: '2', username: 'Bob' },
-    { id: '3', username: 'Charlie' }]);
+    const [users, setUsers] = useState([{ id: '11', username: 'Alice' },
+    { id: '12', username: 'Bob' },
+    { id: '13', username: 'Charlie' }]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [messages, setMessages] = useState({});
     const [newMessage, setNewMessage] = useState('');
@@ -17,16 +17,16 @@ const ChatDashboard = ({ currentUser, onLogout }) => {
         // get all users that you messaged sorted by latest message
 
         async function handleUserStatus(data){
-          
+          console.log("data",data)
             if ( !data?.isOnline){
                 console.log("user is offline",data)
                 return
             }
           setStatus(prev=>{
-            if(prev.some(user=>user.id === id)){
+            if(prev.some(user=>user.id === data.id)){
                 return prev
             }
-            return [...prev,id]
+            return [...prev,data.id]
           })
         }
         socketService.onUserStatusResponse(handleUserStatus)
@@ -129,6 +129,7 @@ const ChatDashboard = ({ currentUser, onLogout }) => {
                             onClick={() => {
                                 setSelectedUser(user)
                                 socketService.getUserStatus(user.id)
+                                setShowNotification(prev=>prev.filter(id=>id!=user.id))
                             }
                             }
                         >
@@ -136,8 +137,8 @@ const ChatDashboard = ({ currentUser, onLogout }) => {
 
                             {user.username} 
                             </div>
-                            {console.log("userid error",user.id,selectedUser)}
-                        <div className={`p-1 rounded-full text-white ${ showNotification.includes(user?.id) && selectedUser.id !== user.id?"bg-red-500":""}`}>
+                            
+                        <div className={`p-1 rounded-full text-white ${ showNotification.includes(user?.id) && (selectedUser?.id || !selectedUser) !== user.id?"bg-red-500":""}`}>
                             {showNotification.includes(user?.id)&&
                             <>1</>
                             }

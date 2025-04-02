@@ -36,7 +36,7 @@ router.post("/login", passport.authenticate("local",{session:false}), (req, res)
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
     // Set username cookie with the same settings
-    res.cookie("username", userData.username, {
+    res.cookie("user", `${userData.username}-${userData.id}`, {
       httpOnly: false,
       secure: true,
       sameSite: "none",
@@ -44,6 +44,7 @@ router.post("/login", passport.authenticate("local",{session:false}), (req, res)
     });
     res.status(200).json({
       token,
+      user:userData,
       message: "logged in successfully",
     });
   } catch (error) {
