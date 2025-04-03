@@ -54,6 +54,7 @@ function App() {
         <ChatDashboard
           currentUser={user}
           onLogout={handleLogout}
+          token={token}
         />
       )}
     </div>

@@ -6,6 +6,8 @@ const { join } = require("node:path");
 const { jwtSecret } = require("../constants");
 const User = require("../models/user");
 const router = express.Router();
+
+
 router.get(
   "/self",
   passport.authenticate("jwt", { session: false }),

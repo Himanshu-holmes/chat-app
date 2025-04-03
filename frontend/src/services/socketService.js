@@ -61,10 +61,10 @@ class SocketService {
     }
   }
 
-  sendPrivateMessage(senderId, receiverId, message) {
+  sendPrivateMessage(senderData, receiverData, message) {
     this.socket.emit("private_message", {
-      senderId,
-      receiverId,
+      sndData: senderData,
+      rcvData:receiverData,
       message,
     });
   }

@@ -27,6 +27,7 @@ class User {
         return {user:null,isError:true,message:error.message}
    }
   }
+  
 }
 
 module.exports = User;
