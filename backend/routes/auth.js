@@ -21,14 +21,13 @@ router.get(
 );
 router.post("/login", passport.authenticate("local",{session:false}), (req, res) => {
   try {
-    // Only include necessary user data in token
     const userData = {
       id: req.user.id,
-      username: req.user.username,
+      username: req.user.userna
     };
 
     const token = jwt.sign({ data: userData }, jwtSecret, {
-      expiresIn: "1d", // Match the cookie expiration
+      expiresIn: "1d", 
     });
 
     res.cookie("token", token, {
@@ -37,7 +36,6 @@ router.post("/login", passport.authenticate("local",{session:false}), (req, res)
       sameSite: "none", // Protect against CSRF
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
-    // Set username cookie with the same settings
     res.cookie("user", `${userData.username}-${userData.id}`, {
       httpOnly: false,
       secure: true,
@@ -56,7 +54,8 @@ router.post("/login", passport.authenticate("local",{session:false}), (req, res)
 });
 router.post("/register", async(req, res) => {
   try {
-    const {username,password} = req.body
+    const { username, password, publicKeyJwk,salt } = req.body;
+    console.log("req.body",req.body)
     if(!username || !password){
       res.status(400).json({
         message:"username and password is required"
@@ -75,8 +74,8 @@ router.post("/register", async(req, res) => {
     }
     const hashedPassword = await bcrypt.hash(password,10)
   
-    const user = await User.create(username,hashedPassword);
-  
+    const user = await User.create(username,hashedPassword,publicKeyJwk,salt);
+
     res.status(201).json({
       message:"User created Successfully"
     })

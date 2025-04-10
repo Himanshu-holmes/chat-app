@@ -20,6 +20,8 @@ async function initializeDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
+        pubk_jwk JSON NULL,
+        salt BINARY(16) NULL,
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
@@ -33,8 +35,19 @@ async function initializeDatabase() {
         is_read TINYINT(1) DEFAULT 0,
         FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
-      );`
-    );
+      );`);
+
+    await connection.query(`
+        CREATE TABLE IF NOT EXISTS symmetric_key (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        owner INT NOT NULL,
+        recipient INT NOT NULL,
+        encrypted_key JSON NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (owner) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (recipient) REFERENCES users(id) ON DELETE CASCADE
+       )
+      `);
 
     connection.release();
     console.log("Database initialized successfully");

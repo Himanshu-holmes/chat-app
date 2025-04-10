@@ -2,20 +2,24 @@ import React, { useState, useEffect } from 'react';
 import SocketService from '../services/socketService';
 import socketService from '../services/socketService';
 import axios from 'axios';
+import { cryptoService } from '../services/cryptoService';
+import apiService from '../services/axiosService';
 
-const ChatDashboard = ({ currentUser, onLogout,token }) => {
+const ChatDashboard = ({ currentUser, onLogout, token }) => {
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [messages, setMessages] = useState({});
     const [newMessage, setNewMessage] = useState('');
     const [searchUser, setSearchUser] = useState('');
-    const [gotAfterSearch,setGotAfterSearch] = useState('')
+    const [gotAfterSearch, setGotAfterSearch] = useState('')
     const [showNotification, setShowNotification] = useState([])
     const [status, setStatus] = useState([]);
+    const [keyExchanges, setKeyExchanges] = useState({});
 
-console.log("messages",messages)
+
+    console.log("messages", messages)
     useEffect(() => {
-       getUsers()
+        getUsers()
 
         async function handleUserStatus(data) {
             console.log("data", data)
@@ -36,29 +40,24 @@ console.log("messages",messages)
         };
     }, [])
 
-   const getUsers = async()=>{
+    const getUsers = async () => {
         try {
-            const getUsr = await axios.get("http://localhost:5000/message/getUsers",{withCredentials:true,
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+            const getUsr = await apiService.get("/message/getUsers", {
+                withCredentials: true,
             })
-            console.log("get users",getUsr.data)
+            console.log("get users", getUsr.data)
             const usrs = getUsr?.data?.users
             setUsers(usrs)
         } catch (error) {
             console.log(error)
         }
     }
-    const getMessages = async(userId)=>{
+    const getMessages = async (userId) => {
         try {
-            const getMsg = await axios.get("http://localhost:5000/message/getMessages", {
+            const getMsg = await apiService.get("/message/getMessages", {
                 withCredentials: true,
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-                params:{
-                    user:userId
+                params: {
+                    user: userId
                 }
             })
             console.log("get msgs", getMsg.data)
@@ -67,7 +66,7 @@ console.log("messages",messages)
                 const conversationKey = userId
                 return {
                     ...prevMessages,
-                    [conversationKey]: [ ...msg
+                    [conversationKey]: [...msg
                     ]
                 };
             });
@@ -79,8 +78,8 @@ console.log("messages",messages)
         setUsers((prev) => prev.filter(u => u.id !== currentUser.id));
 
         const handleNewMessage = (messageData) => {
-            console.log("handle message ",messageData)
-            const {id,username} = messageData.byUser
+            console.log("handle message ", messageData)
+            const { id, username } = messageData.byUser
             setUsers(prev => {
                 if (prev.some(user => user.id === id)) {
                     return prev; // Avoid duplicate users
@@ -125,8 +124,8 @@ console.log("messages",messages)
             message: newMessage,
             timestamp: Date.now()
         };
-        console.log("selectedUser hsndMsg",selectedUser)
-        console.log("currentUser hsndMsg",currentUser)
+        console.log("selectedUser hsndMsg", selectedUser)
+        console.log("currentUser hsndMsg", currentUser)
         // Send message via socket
         SocketService.sendPrivateMessage(
             currentUser,
@@ -150,18 +149,63 @@ console.log("messages",messages)
         setNewMessage('');
     };
 
-   async function handleSearchUser() {
+    async function handleSearchUser() {
         try {
-            const srchRes = await axios.get("http://localhost:5000/user/search",{params:{
-                user:searchUser
-            },withCredentials:true,headers:{
-                Authorization: `Bearer ${token}`
-            }})
+            const srchRes = await apiService.get("/user/search", {
+                params: {
+                    user: searchUser
+                }, withCredentials: true,
+            })
             const data = srchRes?.data?.user
-            console.log("got after search",data)
+            console.log("got after search", data)
             setGotAfterSearch(data)
         } catch (error) {
             console.error(error)
+        }
+    }
+
+    const handleCLickUser = async (user) => {
+        try {
+            setSelectedUser(user)
+            // if we don't have a symmetric key for this user yet
+            if (!cryptoService.symmetricKeys[user?.id]) {
+                // let's if server have the encrypted symmetric keys
+                const getSymKeyRes = await apiService.get("/message/sm-key",
+                    {
+                        withCredentials: true,
+                        params: {
+                            ownerId: currentUser?.id,
+                            recipientId: user?.id
+                        },
+                    }
+                )
+                if (getSymKeyRes.status !== 200) {
+                    console.log("got not 200 so returning :: res = ", getSymKeyRes.data)
+                    return
+                }
+                //then deccrypt it and use it 
+
+                // else generate new symmtric key encrypt it and send to server to store in db
+            }
+
+
+            socketService.getUserStatus(user.id)
+            setShowNotification(prev => prev.filter(id => id != user.id))
+            getMessages(user?.id)
+        } catch (error) {
+            // console.error(error)
+            if (error?.response?.data?.message) {
+                console.log("message for sym generation", error?.response?.data?.message)
+                const recipient = users.find(item => item?.id === user?.id)
+                if (!recipient) {
+                    console.log(`user with this id ${user?.id} not found in the useState users`)
+                }
+                const recipientPublicKey = recipient?.publicKey
+
+
+            } else {
+                console.error(error)
+            }
         }
     }
 
@@ -180,10 +224,8 @@ console.log("messages",messages)
                             className={`user-item ${selectedUser?.id === user.id ? 'selected' : ''} flex justify-between`}
                             onClick={
                                 () => {
-                                    setSelectedUser(user)
-                                    socketService.getUserStatus(user.id)
-                                    setShowNotification(prev => prev.filter(id => id != user.id))
-                                    getMessages(user?.id)
+                                    handleCLickUser(user)
+
                                 }
                             }
                         >
@@ -243,13 +285,13 @@ console.log("messages",messages)
                 <input value={searchUser} onChange={(e) => setSearchUser(e.target.value)} />
                 <button onClick={handleSearchUser}>Search</button>
                 {gotAfterSearch && (
-                    <div onClick={()=>{
+                    <div onClick={() => {
                         setSelectedUser(gotAfterSearch)
                         setUsers((prev) => {
                             if (prev.some(user => user.id === gotAfterSearch.id)) {
                                 return prev
                             }
-                            return [...prev,gotAfterSearch]
+                            return [...prev, gotAfterSearch]
                         });
                         setGotAfterSearch("")
                     }}>

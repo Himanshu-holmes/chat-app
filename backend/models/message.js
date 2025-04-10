@@ -63,6 +63,14 @@ class Message {
    
     return users;
   }
+
+  static async getSymmetricKey(ownerId,recipientId){
+     const [symKey] = await pool.query(`
+          SELECT encrypted_key from symmetric_key
+          WHERE owner = ? AND recipient = ? 
+      `,[ownerId,recipientId]);
+      return symKey
+  }
 }
 
 module.exports = Message;

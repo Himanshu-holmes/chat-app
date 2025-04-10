@@ -13,6 +13,7 @@
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
+    "libsodium-wrappers-sumo": "^0.7.15",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "react": "^19.0.0",

@@ -48,7 +48,7 @@ const initializeSockets = (server) => {
     
     // Store user when they authenticate
     await userStatus.setOnline(currentUsername, socket?.id);
-
+    
     // Search for a user by userId
     socket.on("searchUser", async (userToSearch) => {
       console.log("Searched user:", userToSearch);

@@ -7,11 +7,12 @@ const User = require("../models/user");
 passport.use(
   new LocalStrategy(async(username, password, done) => {
      const response = await User.getUser(username)
-     if(!!response.isError){
-      
+     console.log(response.user)
+     if(!!response.isError || !response.user){
        return done(null,false,{message:response.message})
       }
       const user = response?.user
+
       console.log("user login",user)
     const isMatch = await bcrypt.compare(password, user?.password);
     console.log("isMatch",isMatch)

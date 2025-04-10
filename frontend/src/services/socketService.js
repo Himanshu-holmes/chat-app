@@ -17,7 +17,7 @@ class SocketService {
     });
    
     // Authentication
-    this.socket.emit("authenticate", "");
+    // this.socket.emit("authenticate", "");
 
     // Connection event listeners
     this.socket.on("connect", (socket) => {

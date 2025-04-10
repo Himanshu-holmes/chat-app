@@ -20,9 +20,16 @@ const userStatus = {
   },
   getUserSocketId:async(username)=>{
     return await redisClient.get(`user:${username}`);
-  }
-  
+  } 
 };
+const userPbK = {
+  setPbk:async(username,pbk)=>{
+    return await redisClient.set(`pbk:${username}`,pbk)
+  },
+  getPbk:async(username)=>{
+    return await redisClient.get(`pbk:${username}`)
+  }
+}
 
 redisClient.on("error", (err) => {
   console.error("Redis Client Error", err);
@@ -31,4 +38,5 @@ redisClient.on("error", (err) => {
 module.exports = {
   redisClient,
   userStatus,
+  userPbK
 };
