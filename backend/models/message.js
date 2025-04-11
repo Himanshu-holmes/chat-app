@@ -5,7 +5,7 @@ class Message {
   static async create(senderId, receiverId, messageText) {
     const [result] = await pool.query(
       "INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)",
-      [senderId, receiverId, messageText]
+      [senderId, receiverId, JSON.stringify(messageText)]
     );
     return result.insertId;
   }
@@ -27,17 +27,17 @@ class Message {
        ORDER BY timestamp`,
       [user1Id, user2Id, user2Id, user1Id]
     );
-     let sanitisedMessages = [];
-     if (messages.length>0) {
-       sanitisedMessages = messages.map(
-         ({ id, sender_id, receiver_id, ...rest }) => ({
-           messageId: id,
-           senderId: String(sender_id),
-           receiverId: String(receiver_id),
-           ...rest,
-         })
-       );
-     }
+    let sanitisedMessages = [];
+    if (messages.length > 0) {
+      sanitisedMessages = messages.map(
+        ({ id, sender_id, receiver_id, ...rest }) => ({
+          messageId: id,
+          senderId: String(sender_id),
+          receiverId: String(receiver_id),
+          ...rest,
+        })
+      );
+    }
     return sanitisedMessages;
   }
 
@@ -60,16 +60,28 @@ class Message {
    ORDER BY MAX(m.timestamp) DESC;`,
       [userId, userId, userId]
     );
-   
+
     return users;
   }
 
-  static async getSymmetricKey(ownerId,recipientId){
-     const [symKey] = await pool.query(`
-          SELECT encrypted_key from symmetric_key
-          WHERE owner = ? AND recipient = ? 
-      `,[ownerId,recipientId]);
-      return symKey
+  static async getSymmetricKey(ownerId, recipientId) {
+    const [symKey] = await pool.query(
+      `
+        SELECT encrypted_key FROM symmetric_key
+        WHERE (owner = ? AND recipient = ?) OR (owner = ? AND recipient = ?)
+      `,
+      [ownerId, recipientId, recipientId, ownerId]
+    );
+    return symKey;
+  }
+  static async createSymmetricKey(ownerId, recipientId, encryptedKey) {
+    const [symKey] = await pool.query(
+      `
+          INSERT INTO symmetric_key (owner,recipient,encrypted_key) VALUES (?,?,?)
+      `,
+      [ownerId, recipientId, JSON.stringify(encryptedKey)]
+    );
+    return symKey.insertId;
   }
 }
 

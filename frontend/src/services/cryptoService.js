@@ -1,3 +1,4 @@
+// this.symmetricKeys are in like { [username]:symmetricKey}
 // Enhanced CryptoService.js using libsodium for deterministic key generation
 import sodium from "libsodium-wrappers-sumo";
 import apiService from "./axiosService";
@@ -327,11 +328,13 @@ import apiService from "./axiosService";
     await this.initialize();
 
     try {
+      console.log("this.keyPair", this.keyPair);
       if (!this.keyPair || !this.keyPair.privateKey) {
         throw new Error("Private key not available");
       }
 
       const encryptedKey = new Uint8Array(encryptedSymmetricKey.encryptedKey);
+      console.log("encryptedKey", encryptedKey);
 
       // Decrypt the symmetric key using our private key
       const symmetricKey = sodium.crypto_box_seal_open(
@@ -362,13 +365,27 @@ import apiService from "./axiosService";
   }
 
   // Encrypt a message using the symmetric key for the recipient
-  async encryptMessage(message, recipient) {
+  async encryptMessage(message, reciever) {
     await this.initialize();
 
     try {
-      const symmetricKey = this.symmetricKeys[recipient];
+      const recipient = reciever?.username
+      let symmetricKey = this.symmetricKeys[recipient];
       if (!symmetricKey) {
-        throw new Error(`No symmetric key found for recipient: ${recipient}`);
+        const getSmKeyRes = await apiService.get("/message/sm-key",{
+          params:{
+            
+            recipientId:reciever?.id
+          }
+        })
+        const encryptedSymKey = getSmKeyRes.data?.symKey;
+        console.log("encryptedSymKey got from db",encryptedSymKey)
+        if(encryptedSymKey){
+          let decryptSymKey = await cryptoService.decryptSymmetricKey(encryptedSymKey)
+          console.log("decryptedSymKey",decryptSymKey)
+          symmetricKey = decryptSymKey;
+          this.symmetricKeys[recipient] = decryptSymKey
+        }
       }
 
       // Generate a random nonce
@@ -395,13 +412,30 @@ import apiService from "./axiosService";
   }
 
   // Decrypt a message using the symmetric key for the sender
-  async decryptMessage(encryptedObj, sender) {
+  async decryptMessage(encryptedObj, senderData) {
+    console.log("decryptMessage: sender data ",senderData)
     await this.initialize();
 
     try {
-      const symmetricKey = this.symmetricKeys[sender];
+      const sender = senderData?.username
+      let symmetricKey = this.symmetricKeys[sender];
       if (!symmetricKey) {
-        throw new Error(`No symmetric key found for sender: ${sender}`);
+         const getSmKeyRes = await apiService.get("/message/sm-key", {
+           params: {
+             recipientId: senderData?.id,
+           },
+         });
+         const encryptedSymKey = getSmKeyRes.data?.symKey;
+         console.log("encryptedSymKey got from db", encryptedSymKey);
+         if (encryptedSymKey) {
+           let decryptSymKey = await cryptoService.decryptSymmetricKey(
+             encryptedSymKey
+           );
+           console.log("decryptedSymKey", decryptSymKey);
+           symmetricKey = decryptSymKey;
+           this.symmetricKeys[sender] = decryptSymKey;
+         }
+       
       }
 
       const nonce = new Uint8Array(encryptedObj.nonce);

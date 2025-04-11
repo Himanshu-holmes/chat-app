@@ -65,17 +65,51 @@ router.get(
   }
 );
 
+router.post("/sm-key",passport.authenticate("jwt",{session:false}),async(req,res)=>{
+  try {
+    const {recipient,smKey} = req.body
+    if(!req?.user?.id || !recipient || !smKey){
+      res.status(400).json({
+        message:"Bad Request"
+      })
+      return
+    }
+    const {id} = req.user
+    const symKey = await Message.createSymmetricKey(String(id),String(recipient),smKey)
+    if(!symKey){
+      res.status(400).json({
+        message: "Something went wrong",
+      });
+      return;
+    }
+    res.status(200).json({
+      message:"success"
+    })
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+})
 router.get(
   "/sm-key",
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
-        const { ownerId, recipientId } = req.query;
-      const {id} = req.user
+        const {  recipientId } = req.query;
+        console.log("sm-key: req.user",req.user)
+      const {id} = req?.user
       
+      const ownerId = String(id)
       console.log("userid ownerid reciepientid",typeof(id),typeof(ownerId),typeof(recipientId))
-      if(String(id) !== ownerId){
+      if(!recipientId){
         res.status(400).json({
+          message: "recipientId is required",
+        });
+        return; 
+      }
+      if(!id){
+        res.status(401).json({
             message:"Bad Request"
         })
         return
@@ -87,8 +121,10 @@ router.get(
         });
         return;
       }
+      const encryptedKey = symKey[0]?.encrypted_key || null;
+
       res.status(200).json({
-        symKey,
+        symKey:encryptedKey,
         message:"success"
       })
     } catch (error) {

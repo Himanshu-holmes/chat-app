@@ -68,6 +68,13 @@ class SocketService {
       message,
     });
   }
+  sendSymmetricKey(selectedUsername,encryptedKey){
+    this.socket.emit("symmetric_key_exchange", {
+      to: selectedUsername,
+      encryptedKey,
+    });
+
+  }
   getUserStatus(userId){
     this.socket.emit("user:status",userId);
   }

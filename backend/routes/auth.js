@@ -21,9 +21,10 @@ router.get(
 );
 router.post("/login", passport.authenticate("local",{session:false}), (req, res) => {
   try {
+    console.log("login: req.user",req.user)
     const userData = {
       id: req.user.id,
-      username: req.user.userna
+      username: req.user.username
     };
 
     const token = jwt.sign({ data: userData }, jwtSecret, {

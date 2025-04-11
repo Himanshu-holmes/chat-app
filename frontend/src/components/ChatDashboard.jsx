@@ -4,6 +4,7 @@ import socketService from '../services/socketService';
 import axios from 'axios';
 import { cryptoService } from '../services/cryptoService';
 import apiService from '../services/axiosService';
+import PassModal from './passwordDialog';
 
 const ChatDashboard = ({ currentUser, onLogout, token }) => {
     const [users, setUsers] = useState([]);
@@ -62,11 +63,29 @@ const ChatDashboard = ({ currentUser, onLogout, token }) => {
             })
             console.log("get msgs", getMsg.data)
             const msg = getMsg?.data?.data
+            console.log("msg", msg)
+            const firstMessage = msg[0].message;
+
+            const senderData = {
+                username:msg[0].senderUsername,
+                id: msg[0].senderId
+            }
+            console.log("senderData", senderData)
+            const decryptMessage = await cryptoService.decryptMessage(firstMessage, senderData)
+            console.log("decryptedMessage",decryptMessage)
+
+            const decryptedMessages = await Promise.all (msg.map(async(message) => {
+                const decryptedMessageGot = await cryptoService.decryptMessage(message.message, senderData)
+                console.log("decryptedMessageGot.....",decryptedMessageGot)
+               return {
+                ...message,
+            message:decryptedMessageGot }}))
+            console.log("decryptedMessages====>",decryptedMessages)
             setMessages(prevMessages => {
                 const conversationKey = userId
                 return {
                     ...prevMessages,
-                    [conversationKey]: [...msg
+                    [conversationKey]: [...decryptedMessages
                     ]
                 };
             });
@@ -77,9 +96,11 @@ const ChatDashboard = ({ currentUser, onLogout, token }) => {
     useEffect(() => {
         setUsers((prev) => prev.filter(u => u.id !== currentUser.id));
 
-        const handleNewMessage = (messageData) => {
+        const handleNewMessage = async(messageData) => {
             console.log("handle message ", messageData)
-            const { id, username } = messageData.byUser
+            const { id, username } = messageData?.byUser
+            const decryptMessage = await cryptoService.decryptMessage(messageData?.message,messageData?.byUser)
+            console.log("decryptedMessage",decryptMessage)
             setUsers(prev => {
                 if (prev.some(user => user.id === id)) {
                     return prev; // Avoid duplicate users
@@ -111,12 +132,12 @@ const ChatDashboard = ({ currentUser, onLogout, token }) => {
     }, [currentUser]);
 
 
-    const handleSendMessage = (e) => {
+    const handleSendMessage = async(e) => {
         e.preventDefault();
 
         if (!newMessage.trim() || !selectedUser) return;
-
         // Prepare message data
+        const encryptMessage = await cryptoService.encryptMessage(newMessage,selectedUser)
         const messageData = {
             senderId: currentUser.id,
             receiverId: selectedUser.id,
@@ -130,7 +151,7 @@ const ChatDashboard = ({ currentUser, onLogout, token }) => {
         SocketService.sendPrivateMessage(
             currentUser,
             selectedUser,
-            newMessage
+            encryptMessage
         );
 
         // Update local messages state
@@ -195,12 +216,32 @@ const ChatDashboard = ({ currentUser, onLogout, token }) => {
         } catch (error) {
             // console.error(error)
             if (error?.response?.data?.message) {
+                console.log("user onClick",user)
                 console.log("message for sym generation", error?.response?.data?.message)
-                const recipient = users.find(item => item?.id === user?.id)
-                if (!recipient) {
-                    console.log(`user with this id ${user?.id} not found in the useState users`)
+                if (error?.response?.data?.message.toLowerCase() ==="gen"){
+  
+                    const symmetricKey = await cryptoService.createSymmetricKey(user?.username);
+                    const recipient = users.find(item => item?.id === user?.id)
+                    if (!recipient) {
+                        console.log(`user with this id ${user?.id} not found in the useState users`)
+                    }
+                    const recipientPublicKey = recipient?.pubk_jwk
+                    const encryptedKey = await cryptoService.encryptSymmetricKey(symmetricKey,recipientPublicKey)
+                    try {
+                        console.log("encryptedKey",encryptedKey.encryptedKey)
+                        const response = await apiService.post("/message/sm-key",{
+                            recipient:user?.id,
+                            smKey:encryptedKey
+                        })
+                        if (response.status !== 200){
+                            console.log("something went wrong",response)
+                        }
+
+                    } catch (error) {
+                        
+                    }
+
                 }
-                const recipientPublicKey = recipient?.publicKey
 
 
             } else {
@@ -208,9 +249,11 @@ const ChatDashboard = ({ currentUser, onLogout, token }) => {
             }
         }
     }
-
+ console.log("currentUser",currentUser)
+ console.log("messages",messages)
     return (
         <div className="chat-dashboard">
+            <PassModal/>
             <div className="sidebar">
                 <div className="user-info">
                     <span>Logged in as: {currentUser.username}</span>

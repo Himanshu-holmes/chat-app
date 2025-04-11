@@ -5,9 +5,9 @@ import { cryptoService } from '../services/cryptoService';
 import apiService from '../services/axiosService';
 import { getAxiosErrorMessage } from '../utils/handleAxiosError';
 
-const AuthComponent = ({ setToken, setUser, setPublicKeyJwk }) => {
+const AuthComponent = ({ setToken, setUser, setPublicKeyJwk, password, setPassword }) => {
     const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('')
+   
     const [error, setError] = useState('');
 
     const handleLogin = async (e) => {

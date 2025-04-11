@@ -30,7 +30,7 @@ async function initializeDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         sender_id INT NOT NULL,
         receiver_id INT NOT NULL,
-        message TEXT NOT NULL,
+        message JSON NOT NULL,
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         is_read TINYINT(1) DEFAULT 0,
         FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
