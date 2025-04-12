@@ -365,7 +365,7 @@ import apiService from "./axiosService";
   }
 
   // Encrypt a message using the symmetric key for the recipient
-  async encryptMessage(message, reciever) {
+  async encryptMessage(message, reciever,currentUser) {
     await this.initialize();
 
     try {
@@ -374,7 +374,7 @@ import apiService from "./axiosService";
       if (!symmetricKey) {
         const getSmKeyRes = await apiService.get("/message/sm-key",{
           params:{
-            
+            senderId:currentUser?.id,
             recipientId:reciever?.id
           }
         })
@@ -412,17 +412,19 @@ import apiService from "./axiosService";
   }
 
   // Decrypt a message using the symmetric key for the sender
-  async decryptMessage(encryptedObj, senderData) {
+  async decryptMessage(encryptedObj, senderData,currentUser) {
     console.log("decryptMessage: sender data ",senderData)
+    console.log("decryptMessage: currentUser ",currentUser)
     await this.initialize();
-
+    console.log("crypto:senderData", senderData);
     try {
       const sender = senderData?.username
       let symmetricKey = this.symmetricKeys[sender];
       if (!symmetricKey) {
          const getSmKeyRes = await apiService.get("/message/sm-key", {
            params: {
-             recipientId: senderData?.id,
+             recipientId: currentUser?.id,
+             senderId: senderData?.id,
            },
          });
          const encryptedSymKey = getSmKeyRes.data?.symKey;

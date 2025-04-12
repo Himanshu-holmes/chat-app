@@ -67,15 +67,22 @@ router.get(
 
 router.post("/sm-key",passport.authenticate("jwt",{session:false}),async(req,res)=>{
   try {
-    const {recipient,smKey} = req.body
-    if(!req?.user?.id || !recipient || !smKey){
+    const {recipient,smKey,sender} = req.body
+    if(!req?.user?.id || !recipient || !smKey || !sender){
       res.status(400).json({
         message:"Bad Request"
       })
       return
     }
     const {id} = req.user
-    const symKey = await Message.createSymmetricKey(String(id),String(recipient),smKey)
+    const isValidReq = String(id) === String(sender) || String(id) === String(recipient)
+    if(!isValidReq){
+      res.status(400).json({
+        message:"Bad Request"
+      })
+      return
+    }
+    const symKey = await Message.createSymmetricKey(String(sender),String(recipient),smKey)
     if(!symKey){
       res.status(400).json({
         message: "Something went wrong",
@@ -96,25 +103,34 @@ router.get(
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
-        const {  recipientId } = req.query;
+        const {  senderId,recipientId } = req.query;
         console.log("sm-key: req.user",req.user)
       const {id} = req?.user
       
       const ownerId = String(id)
-      console.log("userid ownerid reciepientid",typeof(id),typeof(ownerId),typeof(recipientId))
-      if(!recipientId){
+      console.log("userid ownerid reciepientid",id,ownerId,recipientId)
+      if(!recipientId || !senderId){
+        console.log(`recipientId ${recipientId} senderId ${senderId}`)
+        console.log("recipientId and senderId is required")
         res.status(400).json({
-          message: "recipientId is required",
+          message: "recipientId and senderId is required",
         });
         return; 
       }
-      if(!id){
+      if(!id ){
         res.status(401).json({
             message:"Bad Request"
         })
         return
       }
-      const symKey = await Message.getSymmetricKey(ownerId, recipientId);
+      const isValidReq = ownerId === senderId || ownerId === recipientId
+      if(!isValidReq){
+        res.status(400).json({
+          message:"Bad Request"
+        })
+        return
+      }
+      const symKey = await Message.getSymmetricKey(senderId, recipientId);
       if (symKey.length === 0) {
         res.status(400).json({
           message: "GEN",

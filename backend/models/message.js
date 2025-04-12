@@ -68,9 +68,9 @@ class Message {
     const [symKey] = await pool.query(
       `
         SELECT encrypted_key FROM symmetric_key
-        WHERE (owner = ? AND recipient = ?) OR (owner = ? AND recipient = ?)
+        WHERE owner = ? AND recipient = ?
       `,
-      [ownerId, recipientId, recipientId, ownerId]
+      [ownerId, recipientId]
     );
     return symKey;
   }

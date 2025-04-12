@@ -87,7 +87,7 @@ return (
         currentUser={user}
         onLogout={handleLogout}
         token={token}
-        publicKeyJwk={publicKeyJwk}
+        currentUserPbkJwk={publicKeyJwk}
       />
     )}
   </div>
