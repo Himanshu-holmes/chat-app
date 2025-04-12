@@ -24,7 +24,9 @@ router.post("/login", passport.authenticate("local",{session:false}), (req, res)
     console.log("login: req.user",req.user)
     const userData = {
       id: req.user.id,
-      username: req.user.username
+      username: req.user.username,
+      publicKeyJwk: req.user?.pubk_jwk,
+      salt: Buffer.from(req.user?.salt),
     };
 
     const token = jwt.sign({ data: userData }, jwtSecret, {

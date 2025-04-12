@@ -5,6 +5,8 @@ import axios from 'axios';
 import { cryptoService } from '../services/cryptoService';
 import apiService from '../services/axiosService';
 import PassModal from './passwordDialog';
+import Chatnav from './Chatnav';
+import { Button } from './ui/button';
 
 const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
     const [users, setUsers] = useState([]);
@@ -64,23 +66,25 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
             })
             // console.log("get msgs", getMsg.data)
             const msg = getMsg?.data?.data
-            // console.log("msg", msg)
+            console.log("msg::::::::::::", msg)
             const firstMessage = msg[0].message;
 
             const senderData = {
-                username:msg[0].senderUsername === currentUser.username ? msg[0].receiverUsername : msg[0].senderUsername,
-                id: msg[0].senderId === currentUser.id ? msg[0].receiverId : msg[0].senderId
+                username: msg[0].senderUsername === currentUser.username ? selectedUser.username : msg[0].senderUsername,
+                id: String(msg[0].senderId) === String(currentUser.id) ? msg[0].receiverId : msg[0].senderId
             }
             // console.log("senderData", senderData)
-            const decryptMessage = await cryptoService.decryptMessage(firstMessage, senderData,currentUser)
+            const decryptMessage = await cryptoService.decryptMessage(firstMessage, senderData, currentUser)
             // console.log("decryptedMessage",decryptMessage)
 
-            const decryptedMessages = await Promise.all (msg.map(async(message) => {
+            const decryptedMessages = await Promise.all(msg.map(async (message) => {
                 const decryptedMessageGot = await cryptoService.decryptMessage(message.message, senderData)
-                console.log("decryptedMessageGot.....",decryptedMessageGot)
-               return {
-                ...message,
-            message:decryptedMessageGot }}))
+                console.log("decryptedMessageGot.....", decryptedMessageGot)
+                return {
+                    ...message,
+                    message: decryptedMessageGot
+                }
+            }))
             // console.log("decryptedMessages====>",decryptedMessages)
             setMessages(prevMessages => {
                 const conversationKey = userId
@@ -97,11 +101,11 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
     useEffect(() => {
         setUsers((prev) => prev.filter(u => u.id !== currentUser.id));
 
-        const handleNewMessage = async(messageData) => {
+        const handleNewMessage = async (messageData) => {
             console.log("handle message ", messageData)
             const { id, username } = messageData?.byUser
-            const decryptMessage = await cryptoService.decryptMessage(messageData?.message,messageData?.byUser,currentUser)
-            console.log("decryptedMessage",decryptMessage)
+            const decryptMessage = await cryptoService.decryptMessage(messageData?.message, messageData?.byUser, currentUser)
+            console.log("decryptedMessage", decryptMessage)
             const newMessageData = { ...messageData, message: decryptMessage };
             setUsers(prev => {
                 if (prev.some(user => user.id === id)) {
@@ -134,12 +138,12 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
     }, [currentUser]);
 
 
-    const handleSendMessage = async(e) => {
+    const handleSendMessage = async (e) => {
         e.preventDefault();
 
         if (!newMessage.trim() || !selectedUser) return;
         // Prepare message data
-        const encryptMessage = await cryptoService.encryptMessage(newMessage,selectedUser,currentUser)
+        const encryptMessage = await cryptoService.encryptMessage(newMessage, selectedUser, currentUser)
         const messageData = {
             senderId: currentUser.id,
             receiverId: selectedUser.id,
@@ -193,7 +197,7 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
             // if we don't have a symmetric key for this user yet
             if (!cryptoService.symmetricKeys[user?.id]) {
                 // let's if server have the encrypted symmetric keys
-                console.log("current User ",currentUser)
+                console.log("current User ", currentUser)
                 const getSymKeyRes = await apiService.get("/message/sm-key",
                     {
                         withCredentials: true,
@@ -221,60 +225,60 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
             if (error?.response?.data?.message) {
                 // console.log("user onClick",user)
                 console.log("message for sym generation", error?.response?.data?.message)
-                if (error?.response?.data?.message.toLowerCase() ==="gen"){
-  
+                if (error?.response?.data?.message.toLowerCase() === "gen") {
+
                     const symmetricKey = await cryptoService.createSymmetricKey(user?.username);
                     const recipient = users.find(item => item?.id === user?.id)
                     if (!recipient) {
                         console.log(`user with this id ${user?.id} not found in the useState users`)
                     }
                     const recipientPublicKey = recipient?.pubk_jwk
-                    const encryptedKey = await cryptoService.encryptSymmetricKey(symmetricKey,recipientPublicKey)
-                    const encryptedKeyCurrentUser = await cryptoService.encryptSymmetricKey(symmetricKey,currentUserPbkJwk)
+                    const encryptedKey = await cryptoService.encryptSymmetricKey(symmetricKey, recipientPublicKey)
+                    const encryptedKeyCurrentUser = await cryptoService.encryptSymmetricKey(symmetricKey, currentUserPbkJwk)
                     try {
                         // console.log("encryptedKey",encryptedKey.encryptedKey)
-                        const response = await apiService.post("/message/sm-key",{
-                            recipient:user?.id,
-                            sender:currentUser?.id,
-                            smKey:encryptedKey
+                        const response = await apiService.post("/message/sm-key", {
+                            recipient: user?.id,
+                            sender: currentUser?.id,
+                            smKey: encryptedKey
                         })
-                        if (response.status !== 200){
+                        if (response.status !== 200) {
                             // console.log("something went wrong",response)
                         }
 
                     } catch (error) {
-                        console.log(error)  
+                        console.log(error)
                     }
                     try {
                         // console.log("encryptedKey",encryptedKey.encryptedKey)
-                        const response = await apiService.post("/message/sm-key",{
-                            recipient:currentUser?.id,
-                            sender:user?.id,
-                            smKey:encryptedKeyCurrentUser
+                        const response = await apiService.post("/message/sm-key", {
+                            recipient: currentUser?.id,
+                            sender: user?.id,
+                            smKey: encryptedKeyCurrentUser
                         })
-                        if (response.status !== 200){
+                        if (response.status !== 200) {
                             // console.log("something went wrong",response)
                         }
-                        
+
                     } catch (error) {
-                        console.log(error)  
+                        console.log(error)
                     }
-                    
+
                 }
-                
-                
+
+
             } else {
                 // console.error(error)
             }
         }
     }
-//  console.log("currentUser",currentUser)
-//  console.log("messages",messages)
- console.log("current user public key",currentUserPbkJwk)
-//  console.log("users",users)
+    //  console.log("currentUser",currentUser)
+    //  console.log("messages",messages)
+    console.log("current user public key", currentUserPbkJwk)
+    //  console.log("users",users)
     return (
         <div className="chat-dashboard">
-            <PassModal/>
+            <PassModal />
             <div className="sidebar">
                 <div className="user-info">
                     <span>Logged in as: {currentUser.username}</span>
@@ -294,8 +298,8 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
                             }
                         >
                             <div>
-
-                                {user.username}
+                                <Chatnav user={user} />
+                               
                             </div>
 
                             <div className={`p-1 rounded-full text-white ${showNotification.includes(user?.id) && (selectedUser?.id || !selectedUser) !== user.id ? "bg-red-500" : ""}`}>
@@ -308,17 +312,44 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
                 </div>
             </div>
 
-            <div className="chat-window">
+            <div className="chat-window relative">
+                <div className='absolute ml-5 right-0 mr-2 top-5'>
+
+                    <input className='p-2 bg-pink-50 rounded-md border-slate-800 outline outline-1' value={searchUser} onChange={(e) => setSearchUser(e.target.value)} />
+                    <Button onClick={handleSearchUser}>Search</Button>
+                    {gotAfterSearch && (
+                        <div className='text-slate-900 font-bold bg-pink-50 w-52 p-1 px-2 rounded-md ' onClick={() => {
+                            setSelectedUser(gotAfterSearch)
+                            setUsers((prev) => {
+                                if (prev.some(user => user.id === gotAfterSearch.id)) {
+                                    return prev
+                                }
+                                return [...prev, gotAfterSearch]
+                            });
+                            setGotAfterSearch("")
+                        }}>
+                            {gotAfterSearch.username &&
+                                <div className='flex justify-between' >
+                                    {gotAfterSearch.username}
+                                    <div className='flex  bg-red-200 p-1 px-2 rounded-md text-red-500'
+                                        onClick={() => setGotAfterSearch("")}>X</div>
+                                </div>
+
+                            }
+
+                        </div>
+                    )}
+                </div>
                 {selectedUser ? (
                     <>
                         <div className="chat-header">
-                            <h2>Chat with {selectedUser.username}</h2>
+                            <Chatnav user={selectedUser} />
                         </div>
                         <div className="messages-container">
                             {messages[selectedUser.id]?.map((msg, index) => (
                                 <div
                                     key={index}
-                                    className={`message ${msg.senderId === currentUser.id ? 'sent' : 'received'
+                                    className={`message ${String(msg.senderId) === String(currentUser.id) ? 'sent' : 'received'
                                         }`}
                                 >
                                     {msg.message}
@@ -344,25 +375,7 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
                     </div>
                 )}
             </div>
-            <div className='relative'>
 
-                <input value={searchUser} onChange={(e) => setSearchUser(e.target.value)} />
-                <button onClick={handleSearchUser}>Search</button>
-                {gotAfterSearch && (
-                    <div onClick={() => {
-                        setSelectedUser(gotAfterSearch)
-                        setUsers((prev) => {
-                            if (prev.some(user => user.id === gotAfterSearch.id)) {
-                                return prev
-                            }
-                            return [...prev, gotAfterSearch]
-                        });
-                        setGotAfterSearch("")
-                    }}>
-                        {gotAfterSearch.username}
-                    </div>
-                )}
-            </div>
         </div>
     );
 };

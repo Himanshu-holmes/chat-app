@@ -14,12 +14,12 @@ export default function PassModal({ password, setPassword, handleUserData, isOpe
 
   return (
     <>
-      <Button
+      {/* <Button
         onClick={open}
         className="rounded-md bg-black/20 py-2 px-4 text-sm font-medium text-white focus:outline-none data-[hover]:bg-black/30 data-[focus]:outline-1 data-[focus]:outline-white"
       >
         Open dialog
-      </Button>
+      </Button> */}
 
       <Dialog open={isOpen?isOpen:false} as="div" className="relative z-10 focus:outline-none" onClose={close} __demoMode>
         <div className="fixed inset-0 z-10 w-screen overflow-y-auto backdrop-blur-2xl">

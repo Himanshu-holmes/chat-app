@@ -57,41 +57,46 @@ function App() {
     const existingUserData = cryptoService.getUserData();
     console.log("app: existingUserData", existingUserData)
     if (existingUserData) {
-    const privateKey =  await cryptoService.decryptPrivateKey(
+      const privateKey = await cryptoService.decryptPrivateKey(
         existingUserData.encryptedPrivateKey,
         password,
         existingUserData.salt
       );
       setPublicKeyJwk(existingUserData.publicKeyJwk)
-      console.log("privateKey",privateKey)
+      console.log("privateKey", privateKey)
     }
-}
+  }
 
-useEffect(()=>{
-   if(token && !password){
-    setIsOpen(true)
-   }
-   if(password && token){
-    getExistingData()
-   }
-},[token,password])
+  useEffect(() => {
+    if (token && !password) {
+      setIsOpen(true)
+    }
+    if (password && token) {
+      getExistingData()
+    }
+  }, [token, password])
 
 
 
-return (
-  <div className="app">
-    {!token ? (
-      <AuthComponent setUser={setUser} setToken={setToken} setPublicKeyJwk={setPublicKeyJwk} password={password} setPassword={setPassword} />
-    ) : !password ? <PassModal password={password} setPassword={setPassword} handleUserData={getExistingData} isOpen={isOpen} setIsOpen={setIsOpen} /> : (
-      <ChatDashboard
-        currentUser={user}
-        onLogout={handleLogout}
-        token={token}
-        currentUserPbkJwk={publicKeyJwk}
-      />
-    )}
-  </div>
-);
+  return (
+    <div className='relative'>
+      <nav className="flex items-center justify-center  top-1 w-full bg-pink-100 border-pink-200 border-2 px-2 sm:px-4 py-2.5 rounded text-orange-500 font-bold text-lg">HISHUMA CHAT APP</nav>
+    <div className="app">
+      
+        {!token ? (
+          <AuthComponent setUser={setUser} setToken={setToken} setPublicKeyJwk={setPublicKeyJwk} password={password} setPassword={setPassword} />
+        ) : !password ? <PassModal password={password} setPassword={setPassword} handleUserData={getExistingData} isOpen={isOpen} setIsOpen={setIsOpen} /> : (
+          <ChatDashboard
+            currentUser={user}
+            onLogout={handleLogout}
+            token={token}
+            currentUserPbkJwk={publicKeyJwk}
+          />
+        )}
+      
+    </div>
+    </div>
+  );
 }
 
 export default App;

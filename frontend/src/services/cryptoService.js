@@ -40,13 +40,13 @@ import apiService from "./axiosService";
   }
 
   // Derive keys from password using libsodium's pwhash
-  async deriveKeysFromPassword(password,isRegistering) {
+  async deriveKeysFromPassword({password,isRegistering}) {
     await this.initialize();
+    console.log("salt",this.salt)
     if(!isRegistering){
       // see if salt exist in db
-      const getSaltRes = await apiService.get("user/salt");
-      console.log("get salt result",getSaltRes)
-
+      // const getSaltRes = await apiService.get("user/salt");
+      // console.log("get salt result",getSaltRes)
     }
     // If no salt exists, generate one
     if (!this.salt) {
