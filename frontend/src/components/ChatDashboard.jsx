@@ -98,10 +98,11 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
         setUsers((prev) => prev.filter(u => u.id !== currentUser.id));
 
         const handleNewMessage = async(messageData) => {
-            // console.log("handle message ", messageData)
+            console.log("handle message ", messageData)
             const { id, username } = messageData?.byUser
             const decryptMessage = await cryptoService.decryptMessage(messageData?.message,messageData?.byUser,currentUser)
             console.log("decryptedMessage",decryptMessage)
+            const newMessageData = { ...messageData, message: decryptMessage };
             setUsers(prev => {
                 if (prev.some(user => user.id === id)) {
                     return prev; // Avoid duplicate users
@@ -117,7 +118,7 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
                     ...prevMessages,
                     [conversationKey]: [
                         ...(prevMessages[conversationKey] || []),
-                        messageData
+                        newMessageData
                     ]
                 };
             });

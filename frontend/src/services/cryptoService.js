@@ -372,12 +372,12 @@ import apiService from "./axiosService";
       const recipient = reciever?.username
       let symmetricKey = this.symmetricKeys[recipient];
       if (!symmetricKey) {
-        const getSmKeyRes = await apiService.get("/message/sm-key",{
-          params:{
-            senderId:currentUser?.id,
-            recipientId:reciever?.id
-          }
-        })
+        const getSmKeyRes = await apiService.get("/message/sm-key", {
+          params: {
+            senderId: reciever?.id,
+            recipientId: currentUser?.id,
+          },
+        });
         const encryptedSymKey = getSmKeyRes.data?.symKey;
         console.log("encryptedSymKey got from db",encryptedSymKey)
         if(encryptedSymKey){
