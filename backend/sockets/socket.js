@@ -9,7 +9,7 @@ const { jwtSecret } = require("../constants");
 
 const JwtStrategy = passportJwt.Strategy;
 const ExtractJwt = passportJwt.ExtractJwt;
-
+// const users = new Map(); // Store userId -> socketId
 const jwtDecodeOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   secretOrKey: jwtSecret,
@@ -41,7 +41,7 @@ const initializeSockets = (server) => {
   io.on("connection", async (socket) => {
     console.log("New client connected");
     console.log("users socket id", socket.id);
-    console.log("user", socket.request.user);
+    // console.log("user", socket.request.user);
     let currentUser = socket.request.user
     let userId = socket.request.user.id;
     let currentUsername = socket.request?.user?.username;
@@ -132,34 +132,55 @@ const initializeSockets = (server) => {
     });
 
     // video call
-  socket.on("room:join", (data) => {
-    const { email, room } = data;
-    console.log("user joined", email, room);
-    emailToSocketIdMap.set(email, socket.id);
-    socketidToEmailMap.set(socket.id, email);
-    io.to(room).emit("user:joined", { email, id: socket.id });
-    socket.join(room);
-    io.to(socket.id).emit("room:join", data);
-  });
+    
+socket.on(
+  "join-room",
+  ({ roomId, userId }) => {
+    console.log(`User ${userId} is trying to join room:`, roomId); // ✅ Debugging log
 
-  socket.on("user:call", ({ to, offer }) => {
-    io.to(to).emit("incomming:call", { from: socket.id, offer });
-  });
+    if (!roomId || !userId) {
+      console.log("Invalid join-room request", { roomId, userId });
+      return;
+    }
 
-  socket.on("call:accepted", ({ to, ans }) => {
-    io.to(to).emit("call:accepted", { from: socket.id, ans });
-  });
+    socket.join(roomId);
+    users[socket.id] = { roomId, userId };
 
-  socket.on("peer:nego:needed", ({ to, offer }) => {
-    console.log("peer:nego:needed", offer);
-    io.to(to).emit("peer:nego:needed", { from: socket.id, offer });
-  });
+    console.log(`User ${userId} joined room:`, roomId);
 
-  socket.on("peer:nego:done", ({ to, ans }) => {
-    console.log("peer:nego:done", ans);
-    io.to(to).emit("peer:nego:final", { from: socket.id, ans });
-  });
+    socket.to(roomId).emit("user-connected", { userId, socketId: socket.id });
+  }
+);
 
+socket.on(
+  "offer",
+  ({ offer, roomId }) => {
+    socket.to(roomId).emit("offer", { offer, sender: socket.id });
+    console.log(`Sending offer to room ${roomId}`, { offer, sender: socket.id }); // ✅ Debugging log
+  }
+);
+
+socket.on(
+  "answer",
+  ({
+    answer,
+    roomId,
+  }) => {
+    socket.to(roomId).emit("answer", { answer, sender: socket.id });
+    console.log(`Sending answer to room ${roomId}`, { answer, sender: socket.id }); // ✅ Debugging log
+  }
+);
+
+socket.on(
+  "ice-candidate",
+  ({
+    candidate,
+    roomId,
+  }) => {
+    socket.to(roomId).emit("ice-candidate", { candidate, sender: socket.id });
+    console.log(`Sending ICE candidate to room ${roomId}`, { candidate, sender: socket.id }); // ✅ Debugging log
+  }
+);
   });
 };
 

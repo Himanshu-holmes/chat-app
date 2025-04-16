@@ -66,8 +66,8 @@ const jwtDecodeOptions = {
 
 passport.use(
   new JwtStrategy(jwtDecodeOptions, (payload, done) => {
-    console.log("messageROute");
-    console.log("payload",payload)
+    // console.log("messageROute");
+    // console.log("payload",payload)
     return done(null, payload.data);
   })
 );
@@ -77,7 +77,7 @@ app.use("/auth",authRoutes)
 app.use("/message",messageRoutes)
 app.use("/user",usrRoutes)
 
-console.log("users".users);
+// console.log("users".users);
 // Start server
 const PORT = process.env.PORT || 5000;
 
