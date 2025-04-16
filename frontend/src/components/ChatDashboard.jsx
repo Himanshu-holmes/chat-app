@@ -7,17 +7,31 @@ import apiService from '../services/axiosService';
 import PassModal from './passwordDialog';
 import Chatnav from './Chatnav';
 import { Button } from './ui/button';
+import { useDispatch, useSelector } from 'react-redux';
+import Loading from './ui/Loading';
+import SearchUser from './SearchUser';
+import { addNotification, addUsers, selectUser, setMessages, setNewMessage, setStatus, setUsers } from '../store/features/interactionSlice';
 
-const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
-    const [users, setUsers] = useState([]);
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [messages, setMessages] = useState({});
-    const [newMessage, setNewMessage] = useState('');
-    const [searchUser, setSearchUser] = useState('');
-    const [gotAfterSearch, setGotAfterSearch] = useState('')
-    const [showNotification, setShowNotification] = useState([])
-    const [status, setStatus] = useState([]);
-    const [keyExchanges, setKeyExchanges] = useState({});
+const ChatDashboard = ({  onLogout }) => {
+    const currentUser = useSelector((state)=>state.user.user)
+    const currentUserPbkJwk = useSelector((state) => state.user.publicKeyJwk)
+   
+
+    const dispatch = useDispatch();
+    const {
+        users,
+        selectedUser,
+        messages,
+        newMessage,
+        searchUser,
+        showNotification,
+        status,
+        isLoading,
+        error,
+    } = useSelector((state) => state.userInteraction);
+  
+   
+    
 
 
     console.log("messages", messages)
@@ -30,12 +44,7 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
                 // console.log("user is offline", data)
                 return
             }
-            setStatus(prev => {
-                if (prev.some(user => user.id === data.id)) {
-                    return prev
-                }
-                return [...prev, data.id]
-            })
+            dispatch(setStatus(data.id))
         }
         socketService.onUserStatusResponse(handleUserStatus)
         return () => {
@@ -50,12 +59,12 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
             })
             // console.log("get users", getUsr.data)
             const usrs = getUsr?.data?.users
-            setUsers(usrs)
+            dispatch(setUsers(usrs))
         } catch (error) {
             console.log(error)
         }
     }
-    const getMessages = async (userId) => {
+    const getMessages = async (userId,selectUser) => {
         try {
             // console.log("Dashboard::userId", userId)
             const getMsg = await apiService.get("/message/getMessages", {
@@ -70,7 +79,7 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
             const firstMessage = msg[0].message;
 
             const senderData = {
-                username: msg[0].senderUsername === currentUser.username ? selectedUser.username : msg[0].senderUsername,
+                username: msg[0].senderUsername === currentUser.username ? selectUser.username : msg[0].senderUsername,
                 id: String(msg[0].senderId) === String(currentUser.id) ? msg[0].receiverId : msg[0].senderId
             }
             // console.log("senderData", senderData)
@@ -99,33 +108,20 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
         }
     }
     useEffect(() => {
-        setUsers((prev) => prev.filter(u => u.id !== currentUser.id));
+        // setUsers((prev) => prev.filter(u => u.id !== currentUser.id));
 
         const handleNewMessage = async (messageData) => {
             console.log("handle message ", messageData)
             const { id, username } = messageData?.byUser
+            console.log("currentUser", currentUser)
             const decryptMessage = await cryptoService.decryptMessage(messageData?.message, messageData?.byUser, currentUser)
             console.log("decryptedMessage", decryptMessage)
             const newMessageData = { ...messageData, message: decryptMessage };
-            setUsers(prev => {
-                if (prev.some(user => user.id === id)) {
-                    return prev; // Avoid duplicate users
-                }
-                return [...prev, { id, username }];
-            });
+            dispatch(addUsers({ id, username }))
 
-            setShowNotification(prev => [...prev, id])
+            dispatch(addNotification(id))
             // console.log("handle message called", messageData)
-            setMessages(prevMessages => {
-                const conversationKey = id;
-                return {
-                    ...prevMessages,
-                    [conversationKey]: [
-                        ...(prevMessages[conversationKey] || []),
-                        newMessageData
-                    ]
-                };
-            });
+           dispatch(setMessages({id,messages:newMessageData}))
         };
 
         // Set up the callback for private messages
@@ -161,117 +157,121 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
         );
 
         // Update local messages state
-        setMessages(prevMessages => {
-            const conversationKey = selectedUser.id;
-            return {
-                ...prevMessages,
-                [conversationKey]: [
-                    ...(prevMessages[conversationKey] || []),
-                    messageData
-                ]
-            };
-        });
+        dispatch(setMessages({ id: selectedUser.id, messages: messageData }));
+     
 
         // Clear input
-        setNewMessage('');
+        dispatch(setNewMessage(""));
     };
 
-    async function handleSearchUser() {
-        try {
-            const srchRes = await apiService.get("/user/search", {
-                params: {
-                    user: searchUser
-                }, withCredentials: true,
-            })
-            const data = srchRes?.data?.user
-            // console.log("got after search", data)
-            setGotAfterSearch(data)
-        } catch (error) {
-            console.error(error)
-        }
-    }
+    // async function handleSearchUser() {
+    //     try {
+    //         const srchRes = await apiService.get("/user/search", {
+    //             params: {
+    //                 user: searchUser
+    //             }, withCredentials: true,
+    //         })
+    //         const data = srchRes?.data?.user
+    //         // console.log("got after search", data)
+    //         setGotAfterSearch(data)
+    //     } catch (error) {
+    //         console.error(error)
+    //     }
+    // }
 
-    const handleCLickUser = async (user) => {
-        try {
-            setSelectedUser(user)
-            // if we don't have a symmetric key for this user yet
-            if (!cryptoService.symmetricKeys[user?.id]) {
-                // let's if server have the encrypted symmetric keys
-                console.log("current User ", currentUser)
-                const getSymKeyRes = await apiService.get("/message/sm-key",
-                    {
-                        withCredentials: true,
-                        params: {
-                            senderId: currentUser?.id,
-                            recipientId: user?.id
-                        },
-                    }
-                )
-                if (getSymKeyRes.status !== 200) {
-                    console.log("got not 200 so returning :: res = ", getSymKeyRes.data)
-                    return
-                }
-                //then deccrypt it and use it 
+    // const handleCLickUser = async (user) => {
+    //     console.log("user clicked", user)
 
-                // else generate new symmtric key encrypt it and send to server to store in db
-            }
+    //     try {
+    //         setIsLoading(true)
+            
+    //         setSelectedUser(user)
+    //         // if we don't have a symmetric key for this user yet
+    //         if (!cryptoService.symmetricKeys[user?.id]) {
+    //             // let's if server have the encrypted symmetric keys
+    //             console.log("current User ", currentUser)
+    //             const getSymKeyRes = await apiService.get("/message/sm-key",
+    //                 {
+    //                     withCredentials: true,
+    //                     params: {
+    //                         senderId: currentUser?.id,
+    //                         recipientId: user?.id
+    //                     },
+    //                 }
+    //             )
+    //             if (getSymKeyRes.status !== 200) {
+    //                 console.log("got not 200 so returning :: res = ", getSymKeyRes.data)
+    //                 return
+    //             }
+    //             //then deccrypt it and use it 
 
-
-            socketService.getUserStatus(user.id)
-            setShowNotification(prev => prev.filter(id => id != user.id))
-            getMessages(user?.id)
-        } catch (error) {
-            // console.error(error)
-            if (error?.response?.data?.message) {
-                // console.log("user onClick",user)
-                console.log("message for sym generation", error?.response?.data?.message)
-                if (error?.response?.data?.message.toLowerCase() === "gen") {
-
-                    const symmetricKey = await cryptoService.createSymmetricKey(user?.username);
-                    const recipient = users.find(item => item?.id === user?.id)
-                    if (!recipient) {
-                        console.log(`user with this id ${user?.id} not found in the useState users`)
-                    }
-                    const recipientPublicKey = recipient?.pubk_jwk
-                    const encryptedKey = await cryptoService.encryptSymmetricKey(symmetricKey, recipientPublicKey)
-                    const encryptedKeyCurrentUser = await cryptoService.encryptSymmetricKey(symmetricKey, currentUserPbkJwk)
-                    try {
-                        // console.log("encryptedKey",encryptedKey.encryptedKey)
-                        const response = await apiService.post("/message/sm-key", {
-                            recipient: user?.id,
-                            sender: currentUser?.id,
-                            smKey: encryptedKey
-                        })
-                        if (response.status !== 200) {
-                            // console.log("something went wrong",response)
-                        }
-
-                    } catch (error) {
-                        console.log(error)
-                    }
-                    try {
-                        // console.log("encryptedKey",encryptedKey.encryptedKey)
-                        const response = await apiService.post("/message/sm-key", {
-                            recipient: currentUser?.id,
-                            sender: user?.id,
-                            smKey: encryptedKeyCurrentUser
-                        })
-                        if (response.status !== 200) {
-                            // console.log("something went wrong",response)
-                        }
-
-                    } catch (error) {
-                        console.log(error)
-                    }
-
-                }
+    //             // else generate new symmtric key encrypt it and send to server to store in db
+    //         }
 
 
-            } else {
-                // console.error(error)
-            }
-        }
-    }
+    //         socketService.getUserStatus(user.id)
+    //         setShowNotification(prev => prev.filter(id => id != user.id))
+    //         getMessages(user?.id,user)
+    //         setIsLoading(false)
+    //     } catch (error) {
+    //         // console.error(error)
+    //         if (error?.response?.data?.message) {
+    //             // console.log("user onClick",user)
+    //             console.log("message for sym generation", error?.response?.data?.message)
+    //             if (error?.response?.data?.message.toLowerCase() === "gen") {
+
+    //                 const symmetricKey = await cryptoService.createSymmetricKey(user?.username);
+    //                 const recipient = users.find(item => item?.id === user?.id)
+    //                 if (!recipient) {
+    //                     console.log(`user with this id ${user?.id} not found in the useState users`)
+    //                 }
+    //                 const recipientPublicKey = recipient?.pubk_jwk
+    //                 const encryptedKey = await cryptoService.encryptSymmetricKey(symmetricKey, recipientPublicKey)
+    //                 const encryptedKeyCurrentUser = await cryptoService.encryptSymmetricKey(symmetricKey, currentUserPbkJwk)
+    //                 try {
+    //                     // console.log("encryptedKey",encryptedKey.encryptedKey)
+    //                     const response = await apiService.post("/message/sm-key", {
+    //                         recipient: user?.id,
+    //                         sender: currentUser?.id,
+    //                         smKey: encryptedKey
+    //                     })
+    //                     if (response.status !== 200) {
+    //                         // console.log("something went wrong",response)
+    //                     }else{
+    //                         socketService.getUserStatus(user.id)
+    //                         setShowNotification(prev => prev.filter(id => id != user.id))
+    //                         getMessages(user?.id,user)
+    //                     }
+
+
+
+    //                 } catch (error) {
+    //                     console.log(error)
+    //                 }
+    //                 try {
+    //                     // console.log("encryptedKey",encryptedKey.encryptedKey)
+    //                     const response = await apiService.post("/message/sm-key", {
+    //                         recipient: currentUser?.id,
+    //                         sender: user?.id,
+    //                         smKey: encryptedKeyCurrentUser
+    //                     })
+    //                     if (response.status !== 200) {
+    //                         // console.log("something went wrong",response)
+    //                     }
+
+    //                 } catch (error) {
+    //                     console.log(error)
+    //                 }
+
+    //             }
+
+
+    //         } else {
+    //             console.error(error)
+    //         }
+    //         setIsLoading(false)
+    //     }
+    // }
     //  console.log("currentUser",currentUser)
     //  console.log("messages",messages)
     console.log("current user public key", currentUserPbkJwk)
@@ -292,7 +292,11 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
                             className={`user-item ${selectedUser?.id === user.id ? 'selected' : ''} flex justify-between`}
                             onClick={
                                 () => {
-                                    handleCLickUser(user)
+                                    dispatch(selectUser({
+                                        user,
+                                        currentUser,
+                                        currentUserPbkJwk
+                                    }))
 
                                 }
                             }
@@ -313,34 +317,8 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
             </div>
 
             <div className="chat-window relative">
-                <div className='absolute ml-5 right-0 mr-2 top-5'>
-
-                    <input className='p-2 bg-pink-50 rounded-md border-slate-800 outline outline-1' value={searchUser} onChange={(e) => setSearchUser(e.target.value)} />
-                    <Button onClick={handleSearchUser}>Search</Button>
-                    {gotAfterSearch && (
-                        <div className='text-slate-900 font-bold bg-pink-50 w-52 p-1 px-2 rounded-md ' onClick={() => {
-                            setSelectedUser(gotAfterSearch)
-                            setUsers((prev) => {
-                                if (prev.some(user => user.id === gotAfterSearch.id)) {
-                                    return prev
-                                }
-                                return [...prev, gotAfterSearch]
-                            });
-                            setGotAfterSearch("")
-                        }}>
-                            {gotAfterSearch.username &&
-                                <div className='flex justify-between' >
-                                    {gotAfterSearch.username}
-                                    <div className='flex  bg-red-200 p-1 px-2 rounded-md text-red-500'
-                                        onClick={() => setGotAfterSearch("")}>X</div>
-                                </div>
-
-                            }
-
-                        </div>
-                    )}
-                </div>
-                {selectedUser ? (
+                {/* <SearchUser handleCLickUser={handleCLickUser} setUsers={setUsers} setGotAfterSearch={setGotAfterSearch} gotAfterSearch={gotAfterSearch} setSearchUser={setSearchUser} searchUser={searchUser} handleSearchUser={handleSearchUser} setSelectedUser={setSelectedUser} /> */}
+                {isLoading ? <Loading message={""} />: selectedUser ? (
                     <>
                         <div className="chat-header">
                             <Chatnav user={selectedUser} />
@@ -360,7 +338,7 @@ const ChatDashboard = ({ currentUser, onLogout, token, currentUserPbkJwk }) => {
                             <input
                                 type="text"
                                 value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
+                                onChange={(e) => dispatch(setNewMessage(e.target.value))}
                                 placeholder="Type a message..."
                                 disabled={!selectedUser}
                             />

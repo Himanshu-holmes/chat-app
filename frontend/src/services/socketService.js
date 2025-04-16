@@ -46,6 +46,9 @@ class SocketService {
     });
     
   }
+  getSocket(){
+    return this.socket;
+  }
   onPrivateMessage(callback) {
       if (typeof callback === "function") {
         this.onPrivateMessageCallback = callback;

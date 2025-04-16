@@ -1,9 +1,11 @@
 import { Button, Dialog, DialogPanel, DialogTitle, Input } from '@headlessui/react'
 import { useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { setPassword } from '../store/features/userSlice';
 
-export default function PassModal({ password, setPassword, handleUserData, isOpen, setIsOpen }) {
- 
- const [currentPassword,setCurrrentPassword] = useState('')
+export default function PassModal({  isOpen, setIsOpen }) {
+  const dispatch = useDispatch();
+  const [currentPassword, setCurrrentPassword] = useState('');
   function open() {
     setIsOpen(true)
   }
@@ -21,7 +23,7 @@ export default function PassModal({ password, setPassword, handleUserData, isOpe
         Open dialog
       </Button> */}
 
-      <Dialog open={isOpen?isOpen:false} as="div" className="relative z-10 focus:outline-none" onClose={close} __demoMode>
+      <Dialog open={isOpen ? isOpen : false} as="div" className="relative z-10 focus:outline-none" onClose={close} __demoMode>
         <div className="fixed inset-0 z-10 w-screen overflow-y-auto backdrop-blur-2xl">
           <div className="flex min-h-full items-center justify-center p-4">
             <DialogPanel
@@ -31,14 +33,12 @@ export default function PassModal({ password, setPassword, handleUserData, isOpe
               <DialogTitle as="h3" className="text-base/7 font-medium text-slate-900">
                 Enter Your Password
               </DialogTitle>
-             <Input className={"p-2 w-full "} type='password' onChange={(e)=>setCurrrentPassword(e.target.value)}/>
+              <Input className={"p-2 w-full "} type='password' onChange={(e) => setCurrrentPassword(e.target.value)} />
               <div className="mt-4">
                 <Button
                   className="inline-flex items-center gap-2 rounded-md bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none data-[hover]:bg-gray-600 data-[focus]:outline-1 data-[focus]:outline-white data-[open]:bg-gray-700"
-                  onClick={async()=>{
-                    setPassword(currentPassword)
-                    
-
+                  onClick={async () => {
+                    dispatch(setPassword(currentPassword))
                     close()
 
                   }}
