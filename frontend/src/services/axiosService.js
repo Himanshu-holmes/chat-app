@@ -4,7 +4,7 @@ import axios from "axios";
 class ApiService {
   constructor() {
     this.api = axios.create({
-      baseURL: "http://localhost:5000",
+      baseURL: "https://192.168.239.195:5000/",
       withCredentials: true,
     });
   }

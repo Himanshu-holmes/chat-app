@@ -9,8 +9,7 @@ class SocketService {
 
   connect(myToken) {
     // Establish socket connection
-    this.socket = io("http://localhost:5000", {
-    
+    this.socket = io("https://192.168.239.195:5000/", {
       extraHeaders: {
         authorization: `bearer ${myToken}`,
       },

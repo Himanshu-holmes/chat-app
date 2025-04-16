@@ -2,19 +2,23 @@ import React, { useEffect, useCallback, useState } from "react";
 import ReactPlayer from "react-player";
 import peer from "../services/peerService";
 import socketService from "../services/socketService";
-
-const RoomPage = () => {
+import { useSelector } from "react-redux";
+const callPage = () => {
     const socket = socketService.getSocket();
     const [remoteSocketId, setRemoteSocketId] = useState(null);
     const [myStream, setMyStream] = useState();
     const [remoteStream, setRemoteStream] = useState();
-
+    const username = useSelector((state) => state.user.user.username);
+    console.log("username", username);
     const handleUserJoined = useCallback(({ email, id }) => {
         console.log(`Email ${email} joined room`);
         setRemoteSocketId(id);
     }, []);
-
+const joinRoom = useCallback(() => {
+    socket.emit("room:join",{email:username,room:"room1"});
+}, [username, socket]);
     const handleCallUser = useCallback(async () => {
+        socket.emit("room:join",{email:username,room:"room1"});
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
             video: true,
@@ -108,7 +112,8 @@ const RoomPage = () => {
         handleNegoNeedIncomming,
         handleNegoNeedFinal,
     ]);
-
+console.log("remote stream", remoteStream?.getTracks());
+console.log("my stream", myStream?.getTracks());
     return (
         <div>
             <h1>Room Page</h1>
@@ -129,6 +134,7 @@ const RoomPage = () => {
             )}
             {remoteStream && (
                 <>
+                   
                     <h1>Remote Stream</h1>
                     <ReactPlayer
                         playing
@@ -139,8 +145,9 @@ const RoomPage = () => {
                     />
                 </>
             )}
+            <button onClick={joinRoom}>Join ROom</button>
         </div>
     );
 };
 
-export default RoomPage;
+export default callPage;

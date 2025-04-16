@@ -43,7 +43,7 @@ export default function PassModal({  isOpen, setIsOpen }) {
 
                   }}
                 >
-                  Got it, thanks!
+                  Enter
                 </Button>
               </div>
             </DialogPanel>

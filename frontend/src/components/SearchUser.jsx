@@ -27,10 +27,10 @@ function SearchUser({   }) {
     }
 
     return (
-        <div className='absolute ml-5 right-0 mr-2 top-5 z-50'>
+        <div className='absolute ml-5 right-4 mr-2 top-2 z-50'>
 
-            <input className='p-2 bg-pink-50 rounded-md border-slate-800 outline outline-1' value={searchUser} onChange={(e) => setSearchUser(e.target.value)} />
-            <Button onClick={handleSearchUser}>Search</Button>
+            <input className='p-2 bg-pink-50 rounded-md border-slate-800 outline outline-1 mr-1' value={searchUser} onChange={(e) => setSearchUser(e.target.value)} />
+            <Button className="" onClick={handleSearchUser}>Search</Button>
             {gotAfterSearch && (
                 <div className='text-slate-900 font-bold bg-pink-50 w-52 p-1 px-2 rounded-md ' onClick={() => {
                     console.log("got after search", gotAfterSearch)

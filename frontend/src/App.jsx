@@ -20,7 +20,7 @@ function App() {
   const [tCookie, setTCookie, removeTCookie] = useCookies(['token']);
   const [uCookie, setUCookie, removeUCookie] = useCookies(['user']);
   const [isOpen, setIsOpen] = useState(false)
-  console.log("cookies", tCookie.token)
+  // console.log("cookies", tCookie.token)
 
 
   useEffect(() => {
@@ -39,7 +39,7 @@ function App() {
   useEffect(() => {
     if (uCookie.user) {
       const extractUser = uCookie.user.split('-')
-      console.log("extracted user", extractUser)
+      // console.log("extracted user", extractUser)
       const userData = {
         id: extractUser[1],
         username: extractUser[0]
@@ -59,7 +59,7 @@ function App() {
   };
   async function getExistingData() {
     const existingUserData = cryptoService.getUserData();
-    console.log("app: existingUserData", existingUserData)
+    // console.log("app: existingUserData", existingUserData)
     if (existingUserData) {
       const privateKey = await cryptoService.decryptPrivateKey(
         existingUserData.encryptedPrivateKey,
@@ -67,7 +67,7 @@ function App() {
         existingUserData.salt
       );
       dispatch(setPublicKeyJwk(existingUserData.publicKeyJwk))
-      console.log("privateKey", privateKey)
+      // console.log("privateKey", privateKey)
     }
   }
 

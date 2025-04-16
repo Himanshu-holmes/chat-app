@@ -11,11 +11,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import Loading from './ui/Loading';
 import SearchUser from './SearchUser';
 import { addNotification, addUsers, selectUser, setMessages, setNewMessage, setStatus, setUsers } from '../store/features/interactionSlice';
+import CallPage from './Call';
 
-const ChatDashboard = ({  onLogout }) => {
-    const currentUser = useSelector((state)=>state.user.user)
+const ChatDashboard = ({ onLogout }) => {
+    const currentUser = useSelector((state) => state.user.user)
     const currentUserPbkJwk = useSelector((state) => state.user.publicKeyJwk)
-   
+
 
     const dispatch = useDispatch();
     const {
@@ -29,17 +30,17 @@ const ChatDashboard = ({  onLogout }) => {
         isLoading,
         error,
     } = useSelector((state) => state.userInteraction);
-  
-   
-    
 
 
-    console.log("messages", messages)
+
+
+
+    // console.log("messages", messages)
     useEffect(() => {
         getUsers()
 
         async function handleUserStatus(data) {
-            console.log("data", data)
+            // console.log("data", data)
             if (!data?.isOnline) {
                 // console.log("user is offline", data)
                 return
@@ -64,7 +65,7 @@ const ChatDashboard = ({  onLogout }) => {
             console.log(error)
         }
     }
-    const getMessages = async (userId,selectUser) => {
+    const getMessages = async (userId, selectUser) => {
         try {
             // console.log("Dashboard::userId", userId)
             const getMsg = await apiService.get("/message/getMessages", {
@@ -75,7 +76,7 @@ const ChatDashboard = ({  onLogout }) => {
             })
             // console.log("get msgs", getMsg.data)
             const msg = getMsg?.data?.data
-            console.log("msg::::::::::::", msg)
+            // console.log("msg::::::::::::", msg)
             const firstMessage = msg[0].message;
 
             const senderData = {
@@ -88,7 +89,7 @@ const ChatDashboard = ({  onLogout }) => {
 
             const decryptedMessages = await Promise.all(msg.map(async (message) => {
                 const decryptedMessageGot = await cryptoService.decryptMessage(message.message, senderData)
-                console.log("decryptedMessageGot.....", decryptedMessageGot)
+                // console.log("decryptedMessageGot.....", decryptedMessageGot)
                 return {
                     ...message,
                     message: decryptedMessageGot
@@ -111,17 +112,17 @@ const ChatDashboard = ({  onLogout }) => {
         // setUsers((prev) => prev.filter(u => u.id !== currentUser.id));
 
         const handleNewMessage = async (messageData) => {
-            console.log("handle message ", messageData)
+            // console.log("handle message ", messageData)
             const { id, username } = messageData?.byUser
-            console.log("currentUser", currentUser)
+            // console.log("currentUser", currentUser)
             const decryptMessage = await cryptoService.decryptMessage(messageData?.message, messageData?.byUser, currentUser)
-            console.log("decryptedMessage", decryptMessage)
+            // console.log("decryptedMessage", decryptMessage)
             const newMessageData = { ...messageData, message: decryptMessage };
             dispatch(addUsers({ id, username }))
 
             dispatch(addNotification(id))
             // console.log("handle message called", messageData)
-           dispatch(setMessages({id,messages:newMessageData}))
+            dispatch(setMessages({ id, messages: newMessageData }))
         };
 
         // Set up the callback for private messages
@@ -158,7 +159,7 @@ const ChatDashboard = ({  onLogout }) => {
 
         // Update local messages state
         dispatch(setMessages({ id: selectedUser.id, messages: messageData }));
-     
+
 
         // Clear input
         dispatch(setNewMessage(""));
@@ -184,7 +185,7 @@ const ChatDashboard = ({  onLogout }) => {
 
     //     try {
     //         setIsLoading(true)
-            
+
     //         setSelectedUser(user)
     //         // if we don't have a symmetric key for this user yet
     //         if (!cryptoService.symmetricKeys[user?.id]) {
@@ -274,7 +275,7 @@ const ChatDashboard = ({  onLogout }) => {
     // }
     //  console.log("currentUser",currentUser)
     //  console.log("messages",messages)
-    console.log("current user public key", currentUserPbkJwk)
+    // console.log("current user public key", currentUserPbkJwk)
     //  console.log("users",users)
     return (
         <div className="chat-dashboard">
@@ -303,10 +304,10 @@ const ChatDashboard = ({  onLogout }) => {
                         >
                             <div>
                                 <Chatnav user={user} />
-                               
+
                             </div>
 
-                            <div className={`p-1 rounded-full text-white ${showNotification.includes(user?.id) && (selectedUser?.id || !selectedUser) !== user.id ? "bg-red-500" : ""}`}>
+                            <div className={`p-1 rounded-full text-red-500 ${showNotification.includes(user?.id) && (selectedUser?.id || !selectedUser) !== user.id ? "bg-red-500" : ""}`}>
                                 {showNotification.includes(user?.id) &&
                                     <>1</>
                                 }
@@ -317,11 +318,10 @@ const ChatDashboard = ({  onLogout }) => {
             </div>
 
             <div className="chat-window relative">
-                {/* <SearchUser handleCLickUser={handleCLickUser} setUsers={setUsers} setGotAfterSearch={setGotAfterSearch} gotAfterSearch={gotAfterSearch} setSearchUser={setSearchUser} searchUser={searchUser} handleSearchUser={handleSearchUser} setSelectedUser={setSelectedUser} /> */}
-                {isLoading ? <Loading message={""} />: selectedUser ? (
+                {/* {isLoading ? <Loading message={""} /> : selectedUser ? (
                     <>
                         <div className="chat-header">
-                            <Chatnav user={selectedUser} />
+                            <Chatnav user={selectedUser} isNav={true} />
                         </div>
                         <div className="messages-container">
                             {messages[selectedUser.id]?.map((msg, index) => (
@@ -351,7 +351,9 @@ const ChatDashboard = ({  onLogout }) => {
                     <div className="no-chat-selected">
                         Select a user to start chatting
                     </div>
-                )}
+                )} */}
+
+                <CallPage/>
             </div>
 
         </div>

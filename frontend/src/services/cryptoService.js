@@ -15,13 +15,13 @@ import apiService from "./axiosService";
 
   // Initialize libsodium
   async initialize() {
-    console.log("isInitialised",this.isInitialized)
+    // console.log("isInitialised",this.isInitialized)
     if (!this.isInitialized) {
       await sodium.ready;
       this.isInitialized = true;
-      console.log("initialised true");
-      console.log("Sodium initialized");
-      console.log("SALTBYTES:", sodium.crypto_pwhash_SALTBYTES); // should log: 16
+      // console.log("initialised true");
+      // console.log("Sodium initialized");
+      // console.log("SALTBYTES:", sodium.crypto_pwhash_SALTBYTES); // should log: 16
     }
   }
 
@@ -29,7 +29,7 @@ import apiService from "./axiosService";
   async generateSalt() {
     await this.initialize();
      const pwhashSaltByte = sodium.crypto_pwhash_SALTBYTES;
-     console.log("pwhassaltbyte",pwhashSaltByte)
+    //  console.log("pwhassaltbyte",pwhashSaltByte)
     this.salt = sodium.randombytes_buf(pwhashSaltByte);
     return this.salt;
   }
@@ -42,7 +42,7 @@ import apiService from "./axiosService";
   // Derive keys from password using libsodium's pwhash
   async deriveKeysFromPassword({password,isRegistering}) {
     await this.initialize();
-    console.log("salt",this.salt)
+    // console.log("salt",this.salt)
     if(!isRegistering){
       // see if salt exist in db
       // const getSaltRes = await apiService.get("user/salt");
@@ -328,13 +328,13 @@ import apiService from "./axiosService";
     await this.initialize();
 
     try {
-      console.log("this.keyPair", this.keyPair);
+      // console.log("this.keyPair", this.keyPair);
       if (!this.keyPair || !this.keyPair.privateKey) {
         throw new Error("Private key not available");
       }
 
       const encryptedKey = new Uint8Array(encryptedSymmetricKey.encryptedKey);
-      console.log("encryptedKey", encryptedKey);
+      // console.log("encryptedKey", encryptedKey);
 
       // Decrypt the symmetric key using our private key
       const symmetricKey = sodium.crypto_box_seal_open(
@@ -379,10 +379,10 @@ import apiService from "./axiosService";
           },
         });
         const encryptedSymKey = getSmKeyRes.data?.symKey;
-        console.log("encryptedSymKey got from db",encryptedSymKey)
+        // console.log("encryptedSymKey got from db",encryptedSymKey)
         if(encryptedSymKey){
           let decryptSymKey = await cryptoService.decryptSymmetricKey(encryptedSymKey)
-          console.log("decryptedSymKey",decryptSymKey)
+          // console.log("decryptedSymKey",decryptSymKey)
           symmetricKey = decryptSymKey;
           this.symmetricKeys[recipient] = decryptSymKey
         }
@@ -413,10 +413,10 @@ import apiService from "./axiosService";
 
   // Decrypt a message using the symmetric key for the sender
   async decryptMessage(encryptedObj, senderData,currentUser) {
-    console.log("decryptMessage: sender data ",senderData)
-    console.log("decryptMessage: currentUser ",currentUser)
+    // console.log("decryptMessage: sender data ",senderData)
+    // console.log("decryptMessage: currentUser ",currentUser)
     await this.initialize();
-    console.log("crypto:senderData", senderData);
+    // console.log("crypto:senderData", senderData);
     try {
       const sender = senderData?.username
       let symmetricKey = this.symmetricKeys[sender];
@@ -428,12 +428,12 @@ import apiService from "./axiosService";
            },
          });
          const encryptedSymKey = getSmKeyRes.data?.symKey;
-         console.log("encryptedSymKey got from db", encryptedSymKey);
+        //  console.log("encryptedSymKey got from db", encryptedSymKey);
          if (encryptedSymKey) {
            let decryptSymKey = await cryptoService.decryptSymmetricKey(
              encryptedSymKey
            );
-           console.log("decryptedSymKey", decryptSymKey);
+          //  console.log("decryptedSymKey", decryptSymKey);
            symmetricKey = decryptSymKey;
            this.symmetricKeys[sender] = decryptSymKey;
          }

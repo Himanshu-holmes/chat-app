@@ -27,7 +27,7 @@ const AuthComponent = ({     }) => {
             const response = await apiService.post("/auth/login", {
                 username, password:currentPassword
             }, { withCredentials: true })
-            console.log("response status", response.status)
+            // console.log("response status", response.status)
             if (response.status != 200) return
             const data = response.data
             dispatch(setToken(data.token))
@@ -41,7 +41,7 @@ const AuthComponent = ({     }) => {
             setLoadingMessage("Please Wait keys are being processed")
             // Check if user exists in local storage
             const existingUserData = cryptoService.getUserData();
-            console.log("login: existingUserData", existingUserData)
+            // console.log("login: existingUserData", existingUserData)
             if (existingUserData && existingUserData.username === username) {
                 await cryptoService.decryptPrivateKey(
                     existingUserData.encryptedPrivateKey,
@@ -50,11 +50,11 @@ const AuthComponent = ({     }) => {
                 );
                 dispatch(setPublicKeyJwk(existingUserData.publicKeyJwk))
             } else {
-                console.log("user does not exist in local storage", "generating keys")
+                // console.log("user does not exist in local storage", "generating keys")
                 // get salt
                 const gotSalt = data.user?.salt
-                console.log("gotSalt", gotSalt)
-                console.log("userData", data.user)
+                // console.log("gotSalt", gotSalt)
+                // console.log("userData", data.user)
                 if (!gotSalt) return
                 await cryptoService.setSalt(gotSalt.data)
                 // if now user exists in local storage
@@ -79,7 +79,7 @@ const AuthComponent = ({     }) => {
         setIsLoading(true)
         setError("")
         e.preventDefault()
-        console.log("registering user", username, currentPassword)
+        // console.log("registering user", username, currentPassword)
         if (!username || !currentPassword) {
             setError("Username and Password is required")
             return
@@ -90,11 +90,11 @@ const AuthComponent = ({     }) => {
             // New user - generate keys
             const { seed, salt } = await cryptoService.deriveKeysFromPassword({ password:currentPassword, isRegistering: true });
             const publicKeyJwk = await cryptoService.generateDeterministicKeyPair(seed);
-            console.log("seed and Salt", seed, salt, publicKeyJwk)
+            // console.log("seed and Salt", seed, salt, publicKeyJwk)
             const response = await apiService.post("/auth/register", {
                 username, password:currentPassword, publicKeyJwk, salt
             }, { withCredentials: true })
-            console.log("response status", response.status)
+            // console.log("response status", response.status)
             if (response.status != 201) return
             // Encrypt private key for storage
             const encryptedPrivateKey = await cryptoService.encryptPrivateKey(currentPassword);
@@ -111,8 +111,8 @@ const AuthComponent = ({     }) => {
         }
     };
 
-    console.log("username", username)
-    console.log("password", currentPassword)
+    // console.log("username", username)
+    // console.log("password", currentPassword)
 
     return (
         <div className="auth-container">
